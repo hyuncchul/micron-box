@@ -607,7 +607,11 @@ function downloadExcel() {
   const trayDescEl = document.getElementById('trayDesc');
   const trayDesc = (trayDescEl && trayDescEl.textContent.startsWith('—')) ? '' : (trayDescEl ? trayDescEl.textContent : '');
 
-  const filled   = state.boxes.filter(b => b && b.scan);
+  // 시작 번호(Start No.) 기준 오름차순 정렬
+  const filled = state.boxes
+    .filter(b => b && b.scan)
+    .slice()
+    .sort((a, b) => Number(a.start) - Number(b.start));
   const totalQty = filled.reduce((s, b) => s + (b.qty || 0), 0);
 
   // ── 공통 헤더 섹션 ────────────────────────────────────────────────
