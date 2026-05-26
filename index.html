@@ -1,0 +1,786 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Micron Barcode List Generator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,'Noto Sans KR',sans-serif;background:#fef9e7;color:#1a1a2e;font-size:14px}
+header{background:#1a2a4a;color:white;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+header .logo{font-size:22px;font-weight:900;color:#e74c3c;letter-spacing:2px;white-space:nowrap}
+header h1{font-size:20px;font-weight:900;text-align:center;flex:1}
+header .header-right{display:flex;align-items:center;gap:12px;white-space:nowrap}
+header .factory{font-size:15px;font-weight:700}
+.lang-select{background:#2a3a5a;color:white;border:1px solid #4a5a7a;border-radius:6px;padding:5px 10px;font-size:13px;font-weight:700;cursor:pointer;outline:none}
+.lang-select:hover{background:#3a4a6a}
+.container{max-width:1300px;margin:0 auto;padding:16px}
+.section{background:white;border:1px solid #d4d4d4;border-radius:8px;padding:14px;margin-bottom:14px}
+.section-title{font-size:13px;font-weight:700;color:#444;margin-bottom:10px;border-bottom:1px solid #eee;padding-bottom:6px}
+.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.info-item{display:flex;flex-direction:column;gap:4px}
+.info-item label{font-size:12px;font-weight:700;color:#555}
+.info-item input,.info-item select{border:1px solid #bbb;border-radius:4px;padding:7px 10px;font-size:14px;background:white}
+.info-item input:focus,.info-item select:focus{outline:2px solid #2563eb;border-color:#2563eb}
+.pn-row{display:grid;grid-template-columns:1fr 1.5fr;gap:12px;align-items:start}
+.pn-field{display:flex;flex-direction:column;gap:4px}
+.pn-field label{font-size:12px;font-weight:700;color:#555}
+.pn-input-wrap{display:flex;gap:6px}
+.pn-input-wrap input{flex:1;border:1px solid #bbb;border-radius:4px;padding:7px 10px;font-size:14px}
+.desc-display{background:#e8f5e9;border:2px solid #2e7d32;border-radius:4px;padding:8px 12px;font-size:15px;font-weight:700;color:#1b5e20;min-height:38px;display:flex;align-items:center}
+.summary-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.stat-box{background:white;border:1px solid #d4d4d4;border-radius:8px;padding:12px;text-align:center}
+.stat-box .val{font-size:26px;font-weight:900;color:#1a2a4a}
+.stat-box .lbl{font-size:11px;color:#666;margin-top:2px}
+.stat-box.highlight .val{color:#c0392b}
+.boxes-section{background:white;border:1px solid #d4d4d4;border-radius:8px;padding:14px;margin-bottom:14px}
+.boxes-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.boxes-header h3{font-size:14px;font-weight:700}
+.boxes-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.box-row{background:#f8f9fa;border:1px solid #ddd;border-radius:6px;padding:8px;position:relative}
+.box-row.filled{background:#e8f4f8;border-color:#2196F3}
+.box-row.filled .box-start,.box-row.filled .box-end{color:#0d47a1;font-weight:700}
+.box-label{font-size:11px;font-weight:700;color:#555;margin-bottom:4px}
+.box-scan{width:100%;border:1px solid #ccc;border-radius:4px;padding:5px 7px;font-size:12px;background:white}
+.box-scan:focus{outline:2px solid #2196F3;border-color:#2196F3}
+.box-info{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:4px}
+.box-info-item{font-size:10px;color:#555}
+.box-info-item span{display:block;font-size:12px;font-weight:700;color:#1a2a4a;word-break:break-all}
+.box-qty{margin-top:4px;font-size:11px;font-weight:700;color:#2e7d32;text-align:right}
+.box-del{position:absolute;top:4px;right:4px;background:none;border:none;cursor:pointer;color:#e74c3c;font-size:14px;padding:0;line-height:1}
+.btn{border:0;border-radius:6px;padding:9px 18px;font-weight:700;cursor:pointer;font-size:13px}
+.btn-primary{background:#1a2a4a;color:white}
+.btn-primary:hover{background:#2a3a6a}
+.btn-success{background:#2e7d32;color:white}
+.btn-success:hover{background:#1b5e20}
+.btn-warning{background:#f57c00;color:white}
+.btn-warning:hover{background:#e65100}
+.btn-danger{background:#c62828;color:white}
+.btn-danger:hover{background:#b71c1c}
+.btn-info{background:#0288d1;color:white}
+.btn-info:hover{background:#01579b}
+.btn-sm{padding:5px 10px;font-size:12px}
+.action-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.pn-mgmt{background:white;border:1px solid #d4d4d4;border-radius:8px;padding:14px;margin-bottom:14px}
+.pn-mgmt-grid{display:grid;grid-template-columns:1fr 2fr auto;gap:8px;align-items:end}
+.pn-list{max-height:200px;overflow-y:auto;margin-top:10px;border:1px solid #eee;border-radius:4px}
+.pn-list table{width:100%;border-collapse:collapse;font-size:12px}
+.pn-list th{background:#f5f5f5;padding:6px 10px;text-align:left;font-weight:700;position:sticky;top:0}
+.pn-list td{padding:5px 10px;border-top:1px solid #eee}
+.pn-list tr:hover td{background:#f9f9f9}
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:100;align-items:center;justify-content:center}
+.modal.show{display:flex}
+.modal-box{background:white;border-radius:10px;padding:24px;max-width:500px;width:100%;margin:20px}
+.modal-box h3{margin-bottom:16px;font-size:16px}
+.modal-box input{width:100%;border:1px solid #ccc;border-radius:4px;padding:8px;margin-bottom:10px;font-size:14px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.msg{padding:8px 12px;border-radius:4px;font-size:13px;font-weight:600;margin-top:8px}
+.msg.ok{background:#e8f5e9;color:#2e7d32}
+.msg.err{background:#ffebee;color:#c62828}
+@media(max-width:900px){.boxes-grid{grid-template-columns:repeat(3,1fr)}.info-grid{grid-template-columns:1fr 1fr}.pn-row{grid-template-columns:1fr}}
+@media(max-width:600px){.boxes-grid{grid-template-columns:repeat(2,1fr)}.summary-bar{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">▲ PEAK</div>
+  <h1>Micron Barcode List Generator</h1>
+  <div class="header-right">
+<select class="lang-select" id="langSelect" onchange="changeLang(this.value)">
+      <option value="ko">🇰🇷 한국어</option>
+      <option value="en">🇺🇸 English</option>
+      <option value="zh">🇨🇳 简体中文</option>
+      <option value="tw">🇹🇼 繁體中文</option>
+    </select>
+  </div>
+</header>
+
+<div class="container">
+
+<!-- Shipment Info -->
+<div class="section">
+  <div class="section-title" data-i18n="shipInfo">출하 정보 (Shipment Information)</div>
+  <div class="info-grid">
+    <div class="info-item">
+      <label data-i18n="shipDate">출하일 (Shipment Date)</label>
+      <input type="date" id="shipDate"/>
+    </div>
+    <div class="info-item">
+      <label data-i18n="shipTo">출하처/고객명 (Ship To)</label>
+      <input type="text" id="shipTo" data-i18n-ph="shipToPlh" placeholder="고객명 입력..."/>
+    </div>
+    <div class="info-item">
+      <label data-i18n="remark">비고 (Remark)</label>
+      <input type="text" id="remark" data-i18n-ph="remarkPlh" placeholder="메모 입력..."/>
+    </div>
+  </div>
+</div>
+
+<!-- PN & Description -->
+<div class="section">
+  <div class="section-title" data-i18n="pnSection">파트 번호 / 트레이 설명 (Part No. / Tray Description)</div>
+  <div class="pn-row">
+    <div class="pn-field">
+      <label data-i18n="pnLabel">PEAK PN (파트 넘버 스캔 또는 입력)</label>
+      <div class="pn-input-wrap">
+        <input type="text" id="peakPN" placeholder="예: 1M999180000E" autocomplete="off"/>
+        <button class="btn btn-primary btn-sm" onclick="lookupPN()" data-i18n="btnLookup">조회</button>
+        <button class="btn btn-info btn-sm" onclick="showPNMgmt()" data-i18n="btnManage">관리</button>
+      </div>
+      <div id="pnMsg" style="height:16px;margin-top:2px;font-size:11px"></div>
+    </div>
+    <div class="pn-field">
+      <label data-i18n="trayLabel">Tray Description (자동 표시)</label>
+      <div class="desc-display" id="trayDesc" data-i18n="trayPlh">— 파트 넘버를 입력하면 자동으로 표시됩니다 —</div>
+    </div>
+  </div>
+</div>
+
+<!-- Summary -->
+<div class="summary-bar">
+  <div class="stat-box"><div class="val" id="totalBoxes">0</div><div class="lbl" data-i18n="statBoxes">스캔 박스 수</div></div>
+  <div class="stat-box highlight"><div class="val" id="totalQty">0</div><div class="lbl" data-i18n="statQty">총 출하 수량</div></div>
+  <div class="stat-box"><div class="val" id="avgQty">0</div><div class="lbl" data-i18n="statAvg">박스당 평균 수량</div></div>
+  <div class="stat-box"><div class="val" id="totalBoxCount">0</div><div class="lbl" data-i18n="statSlots">등록된 박스 슬롯</div></div>
+</div>
+
+<!-- Action Bar -->
+<div class="action-bar">
+  <button class="btn btn-success" onclick="downloadExcel()" data-i18n="btnExcel">📥 Excel 저장</button>
+  <button class="btn btn-primary" onclick="addMoreBoxes(10)" data-i18n="btnAddBox">+ 박스 10개 추가</button>
+  <button class="btn btn-warning" onclick="clearAll()" data-i18n="btnClear">🗑 전체 초기화</button>
+</div>
+
+<!-- Box Scan Section -->
+<div class="boxes-section">
+  <div class="boxes-header">
+    <h3 data-i18n="boxScanTitle">박스 스캔 (Scan All Box for Shipment) — 바코드 형식: PartNo/StartNo/EndNo</h3>
+    <span id="scanHint" style="font-size:12px;color:#888" data-i18n="scanHint">스캔: PartNo/시작번호/끝번호</span>
+  </div>
+  <div class="boxes-grid" id="boxesGrid"></div>
+</div>
+
+<!-- PN Management Modal -->
+<div class="modal" id="pnModal">
+  <div class="modal-box">
+    <h3 data-i18n="modalTitle">파트 번호 / 설명 관리</h3>
+    <div class="pn-mgmt-grid">
+      <div>
+        <label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px">SAP PN</label>
+        <input type="text" id="newPN" data-i18n-ph="newPNPlh" placeholder="파트 넘버"/>
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px">Description</label>
+        <input type="text" id="newDesc" data-i18n-ph="newDescPlh" placeholder="트레이 설명"/>
+      </div>
+      <div style="display:flex;align-items:flex-end">
+        <button class="btn btn-success btn-sm" onclick="addPNEntry()" data-i18n="btnAdd">추가</button>
+      </div>
+    </div>
+    <div id="addPNMsg" class="msg ok" style="display:none"></div>
+    <div class="pn-list" id="pnListWrap"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary btn-sm" onclick="exportPNList()" data-i18n="btnExportPN">PN 목록 내보내기</button>
+      <button class="btn btn-sm" onclick="closeModal()" data-i18n="btnClose">닫기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== TRANSLATIONS ====================
+const LANGS = {
+  ko: {
+    shipInfo:'출하 정보 (Shipment Information)', shipDate:'출하일 (Shipment Date)',
+    shipTo:'출하처/고객명 (Ship To)', shipToPlh:'고객명 입력...',
+    remark:'비고 (Remark)', remarkPlh:'메모 입력...',
+    pnSection:'파트 번호 / 트레이 설명 (Part No. / Tray Description)',
+    pnLabel:'PEAK PN (파트 넘버 스캔 또는 입력)',
+    trayLabel:'Tray Description (자동 표시)',
+    trayPlh:'— 파트 넘버를 입력하면 자동으로 표시됩니다 —',
+    trayPlhEmpty:'— 파트 넘버를 입력하면 자동으로 표시됩니다 —',
+    btnLookup:'조회', btnManage:'관리',
+    statBoxes:'스캔 박스 수', statQty:'총 출하 수량',
+    statAvg:'박스당 평균 수량', statSlots:'등록된 박스 슬롯',
+    btnExcel:'📥 Excel 저장', btnAddBox:'+ 박스 10개 추가', btnClear:'🗑 전체 초기화',
+    boxScanTitle:'박스 스캔 (Scan All Box for Shipment) — 바코드 형식: PartNo/StartNo/EndNo',
+    scanHint:'스캔: PartNo/시작번호/끝번호',
+    modalTitle:'파트 번호 / 설명 관리',
+    newPNPlh:'파트 넘버', newDescPlh:'트레이 설명',
+    btnAdd:'추가', btnExportPN:'PN 목록 내보내기', btnClose:'닫기',
+    msgFound:'✔ 파트 넘버 확인됨', msgNotFound:'⚠ PN 목록에 없음. 관리 버튼으로 추가 가능합니다.',
+    msgPNNotInList:'⚠ 목록에 없는 파트 넘버 (수동 입력 가능)',
+    boxLabel:'Box', boxPlh:'스캔 또는 입력', boxQtyLabel:'수량:',
+    alertFmt:'형식 오류. PartNo/시작번호/끝번호 형식으로 입력하세요.',
+    alertNum:'숫자 형식 오류', alertEndLt:'끝번호가 시작번호보다 작습니다.',
+    alertClear:'모든 데이터를 초기화하시겠습니까?',
+    alertXlsx:'Excel 라이브러리 로딩 중... 잠시 후 다시 시도해주세요.',
+    addPNOk:'추가됨', addPNErr:'PN과 설명 모두 입력하세요.',
+    delConfirm:'를 삭제하시겠습니까?',
+  },
+  en: {
+    shipInfo:'Shipment Information', shipDate:'Shipment Date',
+    shipTo:'Ship To (Customer)', shipToPlh:'Enter customer name...',
+    remark:'Remark', remarkPlh:'Enter memo...',
+    pnSection:'Part No. / Tray Description',
+    pnLabel:'PEAK PN (Scan or type Part No.)',
+    trayLabel:'Tray Description (Auto-filled)',
+    trayPlh:'— Enter Part No. to auto-fill —',
+    trayPlhEmpty:'— Enter Part No. to auto-fill —',
+    btnLookup:'Lookup', btnManage:'Manage',
+    statBoxes:'Scanned Boxes', statQty:'Total Shipment Qty',
+    statAvg:'Avg Qty / Box', statSlots:'Total Box Slots',
+    btnExcel:'📥 Save Excel', btnAddBox:'+ Add 10 Boxes', btnClear:'🗑 Clear All',
+    boxScanTitle:'Scan All Boxes for Shipment — Format: PartNo/StartNo/EndNo',
+    scanHint:'Scan: PartNo/StartNo/EndNo',
+    modalTitle:'Part No. / Description Management',
+    newPNPlh:'Part No.', newDescPlh:'Tray Description',
+    btnAdd:'Add', btnExportPN:'Export PN List', btnClose:'Close',
+    msgFound:'✔ Part No. found', msgNotFound:'⚠ Not in list. Use Manage to add.',
+    msgPNNotInList:'⚠ Part No. not in list (manual entry allowed)',
+    boxLabel:'Box', boxPlh:'Scan or type', boxQtyLabel:'Qty:',
+    alertFmt:'Format error. Use PartNo/StartNo/EndNo.',
+    alertNum:'Number format error', alertEndLt:'End No. is less than Start No.',
+    alertClear:'Clear all data?',
+    alertXlsx:'Loading Excel library... Please try again shortly.',
+    addPNOk:'Added', addPNErr:'Please enter both PN and Description.',
+    delConfirm:' — delete?',
+  },
+  zh: {
+    shipInfo:'发货信息', shipDate:'发货日期',
+    shipTo:'发货目的地/客户名称', shipToPlh:'输入客户名称...',
+    remark:'备注', remarkPlh:'输入备注...',
+    pnSection:'零件编号 / 托盘说明',
+    pnLabel:'PEAK PN（扫描或输入零件编号）',
+    trayLabel:'托盘说明（自动显示）',
+    trayPlh:'— 输入零件编号后自动显示 —',
+    trayPlhEmpty:'— 输入零件编号后自动显示 —',
+    btnLookup:'查询', btnManage:'管理',
+    statBoxes:'已扫描箱数', statQty:'总发货数量',
+    statAvg:'每箱平均数量', statSlots:'已登记箱槽数',
+    btnExcel:'📥 保存Excel', btnAddBox:'+ 增加10个箱', btnClear:'🗑 全部清除',
+    boxScanTitle:'扫描所有发货箱 — 条码格式: PartNo/StartNo/EndNo',
+    scanHint:'扫描: 零件号/起始号/结束号',
+    modalTitle:'零件编号 / 说明管理',
+    newPNPlh:'零件编号', newDescPlh:'托盘说明',
+    btnAdd:'添加', btnExportPN:'导出PN列表', btnClose:'关闭',
+    msgFound:'✔ 零件编号已确认', msgNotFound:'⚠ 不在列表中，可通过管理添加。',
+    msgPNNotInList:'⚠ 不在列表中的零件编号（可手动输入）',
+    boxLabel:'箱', boxPlh:'扫描或输入', boxQtyLabel:'数量:',
+    alertFmt:'格式错误，请使用 PartNo/StartNo/EndNo 格式。',
+    alertNum:'数字格式错误', alertEndLt:'结束号小于起始号。',
+    alertClear:'是否清除所有数据？',
+    alertXlsx:'Excel库加载中...请稍后重试。',
+    addPNOk:'已添加', addPNErr:'请同时输入PN和说明。',
+    delConfirm:' — 确认删除？',
+  },
+  tw: {
+    shipInfo:'出貨資訊', shipDate:'出貨日期',
+    shipTo:'出貨目的地/客戶名稱', shipToPlh:'輸入客戶名稱...',
+    remark:'備註', remarkPlh:'輸入備註...',
+    pnSection:'零件編號 / 托盤說明',
+    pnLabel:'PEAK PN（掃描或輸入零件編號）',
+    trayLabel:'托盤說明（自動顯示）',
+    trayPlh:'— 輸入零件編號後自動顯示 —',
+    trayPlhEmpty:'— 輸入零件編號後自動顯示 —',
+    btnLookup:'查詢', btnManage:'管理',
+    statBoxes:'已掃描箱數', statQty:'總出貨數量',
+    statAvg:'每箱平均數量', statSlots:'已登錄箱槽數',
+    btnExcel:'📥 儲存Excel', btnAddBox:'+ 新增10個箱', btnClear:'🗑 全部清除',
+    boxScanTitle:'掃描所有出貨箱 — 條碼格式: PartNo/StartNo/EndNo',
+    scanHint:'掃描: 零件號/起始號/結束號',
+    modalTitle:'零件編號 / 說明管理',
+    newPNPlh:'零件編號', newDescPlh:'托盤說明',
+    btnAdd:'新增', btnExportPN:'匯出PN清單', btnClose:'關閉',
+    msgFound:'✔ 零件編號已確認', msgNotFound:'⚠ 不在清單中，可透過管理新增。',
+    msgPNNotInList:'⚠ 不在清單中的零件編號（可手動輸入）',
+    boxLabel:'箱', boxPlh:'掃描或輸入', boxQtyLabel:'數量:',
+    alertFmt:'格式錯誤，請使用 PartNo/StartNo/EndNo 格式。',
+    alertNum:'數字格式錯誤', alertEndLt:'結束號小於起始號。',
+    alertClear:'是否清除所有資料？',
+    alertXlsx:'Excel程式庫載入中...請稍後再試。',
+    addPNOk:'已新增', addPNErr:'請同時輸入PN和說明。',
+    delConfirm:' — 確認刪除？',
+  }
+};
+
+let currentLang = localStorage.getItem('micron_lang') || 'ko';
+
+function t(key) {
+  return (LANGS[currentLang] && LANGS[currentLang][key]) || LANGS.ko[key] || key;
+}
+
+function applyLang() {
+  document.getElementById('langSelect').value = currentLang;
+  // text content
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    // Don't overwrite trayDesc if it has real content
+    if (el.id === 'trayDesc' && el.textContent && !el.textContent.startsWith('—') && !el.textContent.includes('파트') && !el.textContent.includes('Enter') && !el.textContent.includes('输入') && !el.textContent.includes('輸入')) return;
+    el.textContent = t(key);
+  });
+  // placeholders
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    el.placeholder = t(el.dataset.i18nPh);
+  });
+  // re-render boxes to update labels
+  renderBoxes();
+  updateSummary();
+}
+
+function changeLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('micron_lang', lang);
+  applyLang();
+}
+
+// ==================== PN MAP DATA ====================
+let PN_MAP = {"1I000116E":"CLIP 43.0X5.40 5.50 installation","1I000114E":"ENDTAB CLIP 43.00X5.40 5.50","1I000115E":"ENDTAB CLIP 43.0X5.40 5.50 w/2D barcode","17B05059001LE":"J/A BGA 11.5X9.5 1.01T","17B05059002LE":"J/A BGA 11.5X9.5 1.01T","17B05059003LE":"J/A BGA 11.5X9.5 1.01T","1M999286000E":"J/A BGA 11.5X9.5 1.01T","1M999350000EB":"J/A BGA 11.5X9.5 1.01T","17B05045001LE":"J/A BGA 2.5X2.5 0.86T","17B05041001LE":"J/A BGA 7.5X13.3 1.1T","17B05041002LE":"J/A BGA 7.5X13.3 1.1T","1M999472000E":"J/A BGA 7X6 0.545T","1M999472001E":"J/A BGA 7X6 0.545T","1M999472002E":"J/A BGA 7X6 0.545T","17B05098001LE":"J/A CSP 8.1X8.1 0.99T/A","17B05077001LE":"J/A CSP 8.5X6.5 1.05T","17B05077002LE":"J/A CSP 8.5X6.5 1.05T","17B05078001LE":"J/A CSP 9.0X6.5 1.05T","17B05078002LE":"J/A CSP 9.0X6.5 1.05T","17B13010001LE":"J/A FBGA 9X11 1.04T","17B05029001LE":"J/A FC-BGA 25X25 1.00T","1M999540000E":"J/A FC-BGA 25X35 0.75T","1M999540001E":"J/A FC-BGA 25X35 0.75T","1M999540002E":"J/A FC-BGA 25X35 0.75T","1M999540003E":"J/A FC-BGA 25X35 0.75T","17B05085001LE":"J/A FC-BGA 25X35 0.75T","17B05085002LE":"J/A FC-BGA 25X35 0.75T","17B05068001LE":"J/A LGA 2.41X3.00 1.38T","17R01004001LE":"J/A LGA 2.41X3.00 1.38T","17B05069001LE":"J/A LGA 2.41X3.00 1.50T","17R01005001LE":"J/A LGA 2.41X3.00 1.50T","17B05019001LE":"J/A LGA 2.5X2.0 0.81T","17B05067001LE":"J/A LGA 2.5X2.5 1.50T","17B05067002LE":"J/A LGA 2.5X2.5 1.50T","17R01002001LE":"J/A LGA 2.5X2.5 1.50T","17B05066001LE":"J/A LGA 3.0X3.0 1.15T","17B05066002LE":"J/A LGA 3.0X3.0 1.15T","17R01003001LE":"J/A LGA 3.0X3.0 1.15T","17B05070001LE":"J/A LGA 3X3 1.50T","17B05070002LE":"J/A LGA 3X3 1.50T","17R01006001LE":"J/A LGA 3X3 1.50T","17B08005001LE":"J/A LGA 4.4X8.2 2.92T","17B08005002LE":"J/A LGA 4.4X8.2 2.92T","17B08005003LE":"J/A LGA 4.4X8.2 2.92T/A","17B05071001LE":"J/A LGA 4.5X4.0 1.55T","17B05071002LE":"J/A LGA 4.5X4.0 1.55T","17B08006001LE":"J/A LGA 6.2X4.2 2.42T","17B05050001LE":"J/A LGA 6.2X7.4 1.15T","17B05058001LE":"J/A MEMS 2.680X5.173 1.56T","17B05035001LE":"J/A MEMS 2X2 0.95T","17B12012001LE":"J/A MEMS 2X2 1.25T","17B05072001LE":"J/A MEMS 3X3 2.22T","17B05072002LE":"J/A MEMS 3X3 2.22T","17B05072003LE":"J/A MEMS 3X3 2.22T","17B05060001LE":"J/A MLF 2X2 1.30T","17B05060002LE":"J/A MLF 2X2 1.30T","17B05060003LE":"J/A MLF 2X2 1.30T","17B05023002LE":"J/A MLF 7X7 0.85T","17B05023001LE":"J/A MLF 7X7 0.85T","17B05033001LE":"J/A MLF 7X7 0.85T","17B05033002LE":"J/A MLF 7X7 0.85T","17B05107001LE":"J/A MLF 7X7 0.85T/Rev.A","17B05107002LE":"J/A MLF 7X7 0.85T/Rev.A","1M999560000E":"J/A MLF 9X9 0.85T","1M999560001E":"J/A MLF 9X9 0.85T","1M999560002E":"J/A MLF 9X9 0.85T","17B05108001LE":"J/A MLF 9X9 0.85T/Rev.A","17B05108002LE":"J/A MLF 9X9 0.85T/Rev.A","17R01001001LE":"J/A MLF-2 5X5 0.85T","17B05022001LE":"J/A MLF-2 5X5 0.85T","17B05022002LE":"J/A MLF-2 5X5 0.85T","17B05026001LE":"J/A MLF-2 8X8 0.85T","17B05026002LE":"J/A MLF-2 8X8 0.85T","1M999471000E":"J/A MLF-2 8X8 0.85T","1M999471001E":"J/A MLF-2 8X8 0.85T","1M999471002E":"J/A MLF-2 8X8 0.85T","1M999471003E":"J/A MLF-2 8X8 0.85T","17B05084001LE":"J/A MODULE 2.115X2.115 0.60T(Assembly)","17B05004001LE":"J/A MODULE 3.38X3.38 0.791T(35.4Yellow P-BIN)","17B05005001LE":"J/A MODULE 3.38X3.38 CO(35.4Yellow P-BIN)","17B05006001LE":"J/A MODULE-1 3.2X3.2 0.54T(35.4mmGreen P-BIN)","17B05007001LE":"J/A MODULE-1 3.2X3.2 COVER(35.4mmGreen P-BIN)","17B05008001LE":"J/A MODULE-2 3.2X3.2 0.79T(35.4mm Blue P-BIN)","17B05009001LE":"J/A MODULE-2 3.2X3.2 COVER(35.4mm Blue P-BIN)","1M999317000E":"J/A NSP 12.0X12.4 1.35T","1M999317001E":"J/A NSP 12.0X12.4 1.35T","1M999600000EB":"J/A NSP 12X11.1 0.886T","17B05100001LE":"J/A NSP 14.0X12.4 0.89T / REV.A","17B05100002LE":"J/A NSP 14.0X12.4 0.89T / REV.A","17B05074001LE":"J/A PSP 4.4X4.4 1.15T","17B05074002LE":"J/A PSP 4.4X4.4 1.15T","17B05074003LE":"J/A PSP 4.4X4.4 1.15T","17B05074004LE":"J/A PSP 4.4X4.4 1.15T","17B05074005LE":"J/A PSP 4.4X4.4 1.15T","17B05074006LE":"J/A PSP 4.4X4.4 1.15T","1M999151000E":"J/A PSP 6.28X7.71 1.15T","1M999151001E":"J/A PSP 6.28X7.71 1.15T","1M999151002E":"J/A PSP 6.28X7.71 1.15T","17B05075001LE":"J/A PSP 8.75X5.50 1.25T","17B05075002LE":"J/A PSP 8.75X5.50 1.25T","17B05075003LE":"J/A PSP 8.75X5.50 1.25T","17B05075004LE":"J/A PSP 8.75X5.50 1.25T","17B05075005LE":"J/A PSP 8.75X5.50 1.25T","1M999159000E":"J/A PSP 8X10 0.65T","1M999159001E":"J/A PSP 8X10 0.65T","1M999159002E":"J/A PSP 8X10 0.65T","1M999159003E":"J/A PSP 8X10 0.65T","17B05097001LE":"J/A PSP 8X10 0.65T/B","1M999524000E":"J/A QFN 13X13 0.85T","1M999524001E":"J/A QFN 13X13 0.85T","17B05036001LE":"J/A QFN 5X3.5mm","17B05081001LE":"J/A QFN 5X3.5mm","17B05081002LE":"J/A QFN 5X3.5mm","1M999361000E":"J/H BGA 50X50 4.37T","1M999361001E":"J/H BGA 50X50 4.37T","1M999361002E":"J/H BGA 50X50 4.37T","1M999446000E":"J/H BGA 50X50 4.37T","1M999354000E":"J/H BGA 55X55 5.77T","1M999432000E":"J/H BGA 55X55 5.77T","1M999432001E":"J/H BGA 55X55 5.77T","1M999432002E":"J/H BGA 55X55 5.77T","1M999427000E":"J/H BGA 60X60 4.97T","1M999433000EB":"J/H BGA 65X65 5.67T","17B05093001LE":"J/H FC-BGA 27X27 3.18T","17B05093002LE":"J/H FC-BGA 27X27 3.18T","1M999463000E":"J/H FC-BGA 35X35 4.54T","1M999463001E":"J/H FC-BGA 35X35 4.54T","17B05090001LE":"J/H FC-BGA 37.5X37.5 3.99T","1M999299000E":"J/H FC-BGA 37.5X37.5 3.99T","1M999299001E":"J/H FC-BGA 37.5X37.5 3.99T","17B05094001LE":"J/H FC-BGA 55X55 4.39T","17B05101001LE":"J/H FC-BGA 55X55 4.39T","1M999254000E":"J/H FC-BGA 55X55 4.39T","1M999254001E":"J/H FC-BGA 55X55 4.39T","1M999254002E":"J/H FC-BGA 55X55 4.39T","1M999221000E":"J/H FC-BGA 57.5X57.5 4.39T","1M999221001E":"J/H FC-BGA 57.5X57.5 4.39T","1M999221002E":"J/H FC-BGA 57.5X57.5 4.39T","1M999221003E":"J/H FC-BGA 57.5X57.5 4.39T","1M999397000E":"J/H FC-BGA 57.5X57.5 4.39T","17B12006001LE":"J/H MODULE 48X61 2.29T","17B12006002LE":"J/H MODULE 48X61 2.29T","17B05042001LE":"J/L BGA 12.3X12.3 1.84T","17B05042002LE":"J/L BGA 12.3X12.3 1.84T","1M999598000E":"J/L BGA 14X14 0.705T","17B05083001LE":"J/L BGA 17X17 1.30T","1M999561000EB":"J/L BGA 18X18 1.22T","1M999510000E":"J/L BGA 19X19 1.73T","1M999510001E":"J/L BGA 19X19 1.73T","1M999510002E":"J/L BGA 19X19 1.73T","17B12005001LE":"J/L BGA 27.70X26.07 1.44T","17B12005002LE":"J/L BGA 27.70X26.07 1.44T","17B12001001LE":"J/L BGA 27.7X23.21 1.5T","17B12001002LE":"J/L BGA 27.7X23.21 1.5T","17B12002001LE":"J/L BGA 27.7X24 1.08T","17B12002002LE":"J/L BGA 27.7X24 1.08T","17B12004001LE":"J/L BGA 27.7X24.0 1.44T","17B12004002LE":"J/L BGA 27.7X24.0 1.44T","17B05046001LE":"J/L BGA 9X15 1.62T","17B05046002LE":"J/L BGA 9X15 1.62T","17B05046003LE":"J/L BGA 9X15 1.62T","17B05046004LE":"J/L BGA 9X15 1.62T","17B05046005LE":"J/L BGA 9X15 1.62T","17B05017001LE":"J/L CABGA 10X10 1.04T","17B05032001LE":"J/L CABGA 10X10 1.04T","17B05032002LE":"J/L CABGA 10X10 1.04T","17B05032003LE":"J/L CABGA 10X10 1.04T","17B07007001LE":"J/L CABGA 10X10 1.04T","17B05016001LE":"J/L CABGA 12X13 1.06T","17B05103001LE":"J/L CABGA 14X14 0.80T / REV.C","17B05063001LE":"J/L CABGA 14X14 0.8T","17B05048001LE":"J/L CABGA 9X9 1.06T","17B05048002LE":"J/L CABGA 9X9 1.06T","17B05048003LE":"J/L CABGA 9X9 1.06T","17B05049001LE":"J/L CABGA 9X9 1.06T","17B08002001LE":"J/L CABGA 9X9 1.06T","17B05106002LE":"J/L CABGA 9x9 1.06T REV.C","1M999591000E":"J/L CSP 12X12 0.85T","1M999591001E":"J/L CSP 12X12 0.85T","1M999591002E":"J/L CSP 12X12 0.85T","1M999591003E":"J/L CSP 12X12 0.85T","1M999777000E":"J/L CSP 12X12 0.85T","17B05096001LE":"J/L CSP 12X12 0.85T","1M999609000EB":"J/L CSP 12X12 0.85T","1M999609001EB":"J/L CSP 12X12 0.85T","17B05015001LE":"J/L CSP 13X10 1.33T","17B05015002LE":"J/L CSP 13X10 1.33T","17B05092001LE":"J/L FBGA 25X25 1.39T","17B05092002LE":"J/L FBGA 25X25 1.39T","17B05028001LE":"J/L FBGA 6X8 0.65T","17B05028002LE":"J/L FBGA 6X8 0.65T","17B05028003LE":"J/L FBGA 6X8 0.65T","17B08003001LE":"J/L FBGA 7X7 1.59T","1M999893001E":"J/L FC-BGA 31X31 2.7T","1M999893002E":"J/L FC-BGA 31X31 2.7T","1M999893003E":"J/L FC-BGA 31X31 2.7T","17B05043001LE":"J/L FC-BGA 35X35 2.7T","1M999911001E":"J/L FC-BGA 35X35 2.7T","1M999911002E":"J/L FC-BGA 35X35 2.7T","1M999911003E":"J/L FC-BGA 35X35 2.7T","17B12003001LE":"J/L FC-BGA 37.7X32.7 1.90T","17B12003002LE":"J/L FC-BGA 37.7X32.7 1.90T","1M999786000EB":"J/L HPBGA35X35 3.08T","17B05031001LE":"J/L LGA 3.55X3.55 1.45T","17B05031002LE":"J/L LGA 3.55X3.55 1.45T","17B05052001LE":"J/L LGA 3.55X3.55 2.10T","17B05091001LE":"J/L MEMS 2.80X3.55 1.73T","17B05099001LE":"J/L MEMS 2.80X3.55 1.73T REV.C","17B05095001LE":"J/L MEMS 3.5X3.5 1.93T/A","17B05012001LE":"J/L MODULE 7.14X12.76 3.70T(X1446) (Assembly)","17B05012002LE":"J/L MODULE 7.14X12.76 3.70T(X1446) (Assembly)","17B05011001LE":"J/L MODULE 7.20X13.01 3.70T (Assembly)","17B05011002LE":"J/L MODULE 7.20X13.01 3.70T (Assembly)","17B05003001LE":"J/L MODULE-2 5.2X11 1.086T","17B05030001LE":"J/L MQFP 10X10 2.0T","17B05030002LE":"J/L MQFP 10X10 2.0T","17B08001001LE":"J/L MQFP 10X10 2.0T","17B05034001LE":"J/L MQFP 28X28 3.37T","17B05076001LE":"J/L NSP 12.4X12.0 1.33T","17B05076002LE":"J/L NSP 12.4X12.0 1.33T","17B05040001LE":"J/L NSP 12X14 0.70T","1M999170000E":"J/L NSP 6.71X12.20 1.63T","1M999170001E":"J/L NSP 6.71X12.20 1.63T","1M999170002E":"J/L NSP 6.71X12.20 1.63T","1M999170003E":"J/L NSP 6.71X12.20 1.63T","1M999170004E":"J/L NSP 6.71X12.20 1.63T","1M999508000E":"J/L PBGA 21X21 1.31T","1M999508001E":"J/L PBGA 21X21 1.31T","1M999508002E":"J/L PBGA 21X21 1.31T","1M999508003E":"J/L PBGA 21X21 1.31T","17B05001001LE":"J/L PBGA 23X23 1.73T","17B05001002LE":"J/L PBGA 23X23 1.73T","17B05038001LE":"J/L PBGA 23X23 1.73T","17B05102001LE":"J/L PBGA 23X23 1.73T / REV.B","17B05002001LE":"J/L PBGA 27X27 1.53T","17B05080001LE":"J/L PBGA 27X27 1.53T","17B05044001LE":"J/L PBGA 27X27 1.73T","1M999562000E":"J/L PBGA 27X27 1.73T","1M999562001E":"J/L PBGA 27X27 1.73T","1M999562002E":"J/L PBGA 27X27 1.73T","17B08013001LE":"J/L PBGA 27X27 1.73T","1M999355000E":"J/L PBGA 31X31 1.73T","17B05039001LE":"J/L PIM 3.25X3.25 2.53T","17B05073001LE":"J/L PSP 3.00X18.18 1.43T","17B05073002LE":"J/L PSP 3.00X18.18 1.43T","17B05061001LE":"J/L QFN 14X14 0.85T","17B05062001LE":"J/L QFN 14X14 0.85T","17B05062002LE":"J/L QFN 14X14 0.85T","1M999785000EB":"J/L SCSP 11X13 1.40T","1M999785001EB":"J/L SCSP 11X13 1.40T","1M999785002EB":"J/L SCSP 11X13 1.40T","1M999785003EB":"J/L SCSP 11X13 1.40T","1M999785004EB":"J/L SCSP 11X13 1.40T","1M999785005EB":"J/L SCSP 11X13 1.40T","17B05014001LE":"J/L SOIC 16LD 2.3T","17B08007001LE":"J/L SOIC 7.9X15.3 2.48T","1M999599000E":"J/L TFBGA 12X14 1.20T","1M999599001E":"J/L TFBGA 12X14 1.20T","17B05025001LE":"J/L TQFP 10X10 1.0T","17B05065001LE":"J/L TQFP 10X10 1.0T","17B05054001LE":"J/L TQFP 10X10 1.0T","17B05054002LE":"J/L TQFP 10X10 1.0T","17B07002001LE":"J/L TQFP 10X10 1.0T","17B05037001LE":"J/L TQFP 10X10 1.4T","17B07003001LE":"J/L TQFP 10X10 1.4T","17L01001001LE":"J/L TQFP 12X12 1.0T","17B07005001LE":"J/L TQFP 12X12 1.0T","17R01007001LE":"J/L TQFP 12X12 1.0T","17B05018001LE":"J/L TQFP 12X12 1.0T","17B05018002LE":"J/L TQFP 12X12 1.0T","17B05018003LE":"J/L TQFP 12X12 1.0T","17B05064001LE":"J/L TQFP 12X12 1.0T","17B07001001LE":"J/L TQFP 14X14 1.4T","17B05020001LE":"J/L TQFP 14X14 1.4T","17B05020002LE":"J/L TQFP 14X14 1.4T","17B05021001LE":"J/L TQFP 14X14 1.4T","17B08004001LE":"J/L TQFP 14X14 1.4T","17B08004002LE":"J/L TQFP 14X14 1.4T","17B05057001LE":"J/L TQFP 16X16 1.0T","17B05057003LE":"J/L TQFP 16X16 1.0T","17B05057004LE":"J/L TQFP 16X16 1.0T","17B05051001LE":"J/L TQFP 20X20 1.4T","1M999394000E":"J/L TQFP 20X20 1.4T","1M999394001E":"J/L TQFP 20X20 1.4T","1M999394002E":"J/L TQFP 20X20 1.4T","17B05056001LE":"J/L TQFP 20X20 1.4T","17B05056002LE":"J/L TQFP 20X20 1.4T","17B05024001LE":"J/L TQFP 7X7 1.0T","17B07006001LE":"J/L TQFP 7X7 1.0T","17B05053001LE":"J/L TQFP 7X7 1.0T","17B05047001LE":"J/L TQFP 7X7 1.0T","17B05047002LE":"J/L TQFP 7X7 1.0T","17B05047005LE":"J/L TQFP 7X7 1.0T","17B05055001LE":"J/L TQFP 7X7 1.4T","17B05055002LE":"J/L TQFP 7X7 1.4T","17B07004001LE":"J/L TQFP 7X7 1.4T","17B07004002LE":"J/L TQFP 7X7 1.4T","17B08008001LE":"J/L TSSOP 14LD 1.13T","1M999788000E":"JEDEC/LOW LQFP 10X10","1M999788001EB":"JEDEC/LOW LQFP 10X10","17B12037001LE":"KBG105105 7.57 0102 12","17B12037002LE":"KBG105105 7.57 0102 12","17B42003001LE":"KBG120X126 8.39 0102 42","17B42003002LE":"KBG120X126 8.39 0102 42","17B42003003LE":"KBG120X126 8.39 0102 42","17B42003004LE":"KBG120X126 8.39 0102 42","17B42003005LE":"KBG120X126 8.39 0102 42","17B12033001LE":"KBG6560 5.12 0104 12","17B12033002LE":"KBG6560 5.12 0104 12","17B12033003LE":"KBG6560 5.12 0104 12","17B12041001LE":"KBG7070 5.62 0104 12","17B12032001LE":"KBG72.5X72.5 6.06 0103 12","17B12032002LE":"KBG72.5X72.5 6.06 0103 12","17B42002001LE":"KBG73X71 1.91 0104 42","17B42002002LE":"KBG73X71 1.91 0104 42","17B42002003LE":"KBG73X71 1.91 0104 42","17B42001001LE":"KBG73X71 4.03 0104 42","17B42001002LE":"KBG73X71 4.03 0104 42","17B42001003LE":"KBG73X71 4.03 0104 42","17B12031001LE":"KBG82.5x72.5 7.41 0103 12","17B12031002LE":"KBG82.5x72.5 7.41 0103 12","17B42004002LE":"KBG85X120 8.13 0102 42","17B12021001LE":"KH BG6565 10.643 0103 12","17BP9016001LE":"KH BG70.6X70 3.90 0104 9","1M999144000EB":"KH BG70.6X70 3.90 0104 9","1M999165000EB":"KH BG75X76 6.01 0103 9","1M999167000EB":"KH BG77.5X77.5 3.82 0103 9","17B12025001LE":"KH BG77.5X77.5 6.13 0103 12","1M999178000E":"KH BG77.5X77.5 6.13 0103 12","1M999178001EB":"KH BG77.5X77.5 6.13 0103 12","1M999178002E":"KH BG77.5X77.5 6.13 0103 12","17B12010001LE":"KH BG77.5X90.8 6.56 0103 12","17B12010002LE":"KH BG77.5X90.8 6.56 0103 12","17B12010003LE":"KH BG77.5X90.8 6.56 0103 12","17B12010004LE":"KH BG77.5X90.8 6.56 0103 12","17B12010005LE":"KH BG77.5X90.8 6.56 0103 12","17B12010006LE":"KH BG77.5X90.8 6.56 0103 12","17B12009001LE":"KH BG82.5X72.5 6.53 0103 12","17B12009002LE":"KH BG82.5X72.5 6.53 0103 12","17B12009003LE":"KH BG82.5X72.5 6.53 0103 12","17BP9005001LE":"KH BG85X110 6.23 0102 9","1M999185000EB":"KH BG85X110 6.23 0102 9","1M999185001EB":"KH BG85X110 6.23 0102 9","17B12008001LE":"KH BG85x120 6.32 0102 12","17B12008002LE":"KH BG85x120 6.32 0102 12","17B12007001LE":"KH BG85x120 7.17 0102 12","17B12007002LE":"KH BG85x120 7.17 0102 12","17B12007003LE":"KH BG85X120 7.17 0102 12","17B12007004LE":"KH BG85X120 7.17 0102 12","17B12007005LE":"KH BG85x120 7.17 0102 12","17B12007006LE":"KH BG85x120 7.17 0102 12","17B12007007LE":"KH BG85x120 7.17 0102 12","1M999183000E":"KH BG94X95 5.78 0102 9","1M999141000E":"KH BG98X94 5.86 0102 12","1M999321000E":"KH BGA62.5X62.5 4.99 0104 2","1M999225000EB":"KH BGA70X70 5.30 0104 2","1M999225001EB":"KH BGA70X70 5.30 0104 2","1M999216000EB":"KH BGA77.5X90.5 5.83 0103 2","1M999216001EB":"KH BGA77.5X90.5 5.83 0103 2","1M999216002EB":"KH BGA77.5X90.5 5.83 0103 2","1M999224000E":"KH BGA77.5X90.5 5.83 0103 2","1M999161000EB":"KH LGA69.5X71 5.75 0104 12","1M999161001EB":"KH LGA69.5X71 5.75 0104 12","17B12014001LE":"KH MODULE67.5X67.5 6.48 0104 12","17B12014002LE":"KH MODULE67.5X67.5 6.48 0104 12","1M999327000E":"KH MODULE77.5X77.8 5.59 0103 2","1M999327001E":"KH MODULE77.5X77.8 5.59 0103 2","1M999327002E":"KH MODULE77.5X77.8 5.59 0103 2","17B12028001LE":"KH MODULE80.5X92.5 5.65 0103 12","1M999145001E":"KH MODULE80.5X92.5 5.65 0103 12","1M999203000EB":"KX BG100X100 6.392 0102 9","1M999203001EB":"KX BG100X100 6.392 0102 9","1M999319000E":"KX BG100X72.5 4.99 0103 9","17B13265001G2LE":"KX BG26.375X13.75 3.66 0418 13","1M999302000E":"KX BG2929 4.29 0308 9","17B12034001LE":"KX BG3131 3.83 0309 12 REV.A bL2","1M999496000EB":"KX BG3131 3.83 0309 12 REV.A bL2","1M999496002E":"KX BG3131 3.83 0309 12 REV.A bL2","1M999496001E":"KX BG3131 3.83 0309 12REV.AbL2","1M999162000EB":"KX BG3535 4.65 0307 12","1M999162001EB":"KX BG3535 4.65 0307 12","1M999190000E":"KX BG3535 4.72 0307 9","1M999168000EB":"KX BG3535 4.90 0307 9","1M999186000E":"KX BG3535 5.28 0307 9","17B12020001LE":"KX BG4040 3.16 0206 12","1M999146000EB":"KX BG4040 3.16 0206 12","1M999388000EB":"KX BG4040 3.22 0206 9","1M999388001EB":"KX BG4040 3.22 0206 9","1M999509000E":"KX BG4040 3.8 0206 13","1M999606000E":"KX BG4040 3.8 0206 13","17B13002001LE":"KX BG4040 3.8 0206 13","1M999222000E":"KX BG40X40 3.496 0206 9","1M999334000EB":"KX BG42.5X42.5 3.66 0206 9","1M999334001EB":"KX BG42.5X42.5 3.66 0206 9","17B13006001LE":"KX BG5050 3.8 0205","1M999233000E":"KX BG5050 4.44 0204 9","17B08538004LEB":"KX BG52.5X52.5 3.0 0205 8bL2","1M999311000EB":"KX BG52.5X52.5 3.0 0205 9bL2","1M999431000E":"KX BG52.5X52.5 4.3 0205 13","17B12029001LE":"KX BG52.5X52.5 5.11 0205 12","1M999147000E":"KX BG52.5X52.5 5.11 0205 12","17BP9011001LE":"KX BG5555 5.21 0205 9 REV.B bL4","1M999515000E":"KX BG5555 5.21 0205 9 REV.B bL4","1M999515001E":"KX BG5555 5.21 0205 9 REV.B bL4","1M999323000E":"KX BG5555 5.23 0204 9","1M999358000EB":"KX BG5555 5.23 0204 9","17B12016001LE":"KX BG56X70 5.91 0203 12","1M999143000E":"KX BG56X70 5.91 0203 12","1M999565000EB":"KX BG6060 2.95 0204 9","1M999565001EB":"KX BG6060 2.95 0204 9","1M999565003EB":"KX BG6060 2.95 0204 9","1M999434000EB":"KX BG6060 4.73 0204 9","1M999434001E":"KX BG6060 4.73 0204 9","1M999434001EB":"KX BG6060 4.73 0204 9","1M999434002EB":"KX BG6060 4.73 0204 9","1M999434003EB":"KX BG6060 4.73 0204 9","1M999434004EB":"KX BG6060 4.73 0204 9","17BP9009001LE":"KX BG6060 4.91 0204 9","1M999290000EB":"KX BG6060 4.91 0204 9","1M999290001E":"KX BG6060 4.91 0204 9","1M999160000EB":"KX BG6060 5.06 0204 12","1M999250000E":"KX BG60X72.5 5.10 0203 9","1M999250001EB":"KX BG60X72.5 5.10 0203 9","17B06003001LE":"KX BG62.5X62.5 5.0 0104 6","17B06003002LE":"KX BG62.5X62.5 5.0 0104 6","17B06003003LE":"KX BG62.5X62.5 5.0 0104 6","17BP9002001LE":"KX BG65X65 5.45 0104 9","17BP9002002LE":"KX BG65X65 5.45 0104 9","1M999404000E":"KX BG65X65 5.45 0104 9","1M999404001E":"KX BG65X65 5.45 0104 9","1M999404002E":"KX BG65X65 5.45 0104 9","1M999425000EB":"KX BG65X65 5.45 0104 9","17BP9006001LE":"KX BG67.5X67.5 4.12 0104 9","1M999280000E":"KX BG67.5X67.5 4.12 0104 9","1M999280001E":"KX BG67.5X67.5 4.12 0104 9","1M999280002E":"KX BG67.5X67.5 4.12 0104 9","17BP60123006LE":"KX BG67.5X67.5 4.9 0104 6 REV.A","17BP60123007LE":"KX BG67.5X67.5 4.9 0104 6 REV.A","17BP9012001LE":"KX BG67X77 4.94 0103 9","1M999423000EB":"KX BG67X77 4.94 0103 9","1M999423001E":"KX BG67X77 4.94 0103 9","1M999423001EB":"KX BG67X77 4.94 0103 9","1M999423002EB":"KX BG67X77 4.94 0103 9","1M999188000EB":"KX BG69X71 1.69 0104 9","1M999188001EB":"KX BG69X71 1.69 0104 9","1M999188002EB":"KX BG69X71 1.69 0104 9","1M999188003EB":"KX BG69X71 1.69 0104 9","1M999189000EB":"KX BG69X71 3.76 0104 9","1M999189001EB":"KX BG69X71 3.76 0104 9","1M999189002EB":"KX BG69X71 3.76 0104 9","1M999189003EB":"KX BG69X71 3.76 0104 9","1M999189004EB":"KX BG69X71 3.76 0104 9","1M999454000E":"KX BG70.6X70 1.23 0104 9","1M999455000EB":"KX BG70.6X70 3.12 0104 9REV.A","1M999455001EB":"KX BG70.6X70 3.12 0104 9REV.A","1M999455002EB":"KX BG70.6X70 3.12 0104 9REV.A","1M999309000EB":"KX BG70.6X70 3.38 0104 9","1M999309001EB":"KX BG70.6X70 3.38 0104 9","1M999309002EB":"KX BG70.6X70 3.38 0104 9","1M999309003EB":"KX BG70.6X70 3.38 0104 9","1M999309004EB":"KX BG70.6X70 3.38 0104 9","1M999309005EB":"KX BG70.6X70 3.38 0104 9","1M999205000E":"KX BG7070 5.7 0104 9","1M999205001E":"KX BG7070 5.7 0104 9","1M999407000E":"KX BG71.5X66 3.4 0104 13","17B13239001G2LE":"KX BG72X65 4.32 0104 13","17B13239002G2LE":"KX BG72X65 4.32 0104 13","1M999556000EB":"KX BG7474 5.2 0103 13","1M999556001EB":"KX BG7474 5.2 0103 13","1M999556002EB":"KX BG7474 5.2 0103 13","1M999226000E":"KX BG76.5X90 5.88 0103 9","17BP9013001LE":"KX BG78X72 3.36 0104 9","1M999465000E":"KX BG78X72 4.57 0104 9","1M999392000E":"KX BG78X72 4.74 0104 9","1M999392001E":"KX BG78X72 4.74 0104 9","1M999220000EB":"KX BG79.1X76.3 1.975 0103 9","1M999223000E":"KX BG79.1X76.3 3.895 0103 9","1M999266000EB":"KX BG80X70 5.29 0104 9","1M999266001E":"KX BG80X70 5.29 0104 9","1M999266001EB":"KX BG80X70 5.29 0104 9","1M999266002EB":"KX BG80X70 5.29 0104 9","1M999266003EB":"KX BG80X70 5.29 0104 9","1M999389000E":"KX BG8585 4.88 0103 9","1M999389001E":"KX BG8585 4.88 0103 9","1M999477000EB":"KX BG8585 5.26 0103 8REV.A BL4","1M999477001E":"KX BG8585 5.26 0103 8REV.A BL4","1M999477001EB":"KX BG8585 5.26 0103 8REV.A BL4","17B12017001LE":"KX BG87.5X72.5 5.10 0103 12 REV.A","17B12017002LE":"KX BG87.5X72.5 5.10 0103 12 REV.A","1M999164000E":"KX BG87.5X72.5 5.10 0103 12 REV.A","1M999164001E":"KX BG87.5X72.5 5.10 0103 12 REV.A","1M999164002E":"KX BG87.5X72.5 5.10 0103 12 REV.A","1M999164003EB":"KX BG87.5X72.5 5.10 0103 12 REV.A","1M999164004E":"KX BG87.5X72.5 5.10 0103 12 REV.A","1M999164005E":"KX BG87.5X72.5 5.10 0103 12 REV.A","17BP9004001LE":"KX BG87.5X72.5 5.10 0103 9","1M999267000EB":"KX BG87.5X72.5 5.10 0103 9","1M999267001EB":"KX BG87.5X72.5 5.10 0103 9","1M999267002EB":"KX BG87.5X72.5 5.10 0103 9","1M999267003E":"KX BG87.5X72.5 5.10 0103 9","1M999267003EB":"KX BG87.5X72.5 5.10 0103 9","1M999267004EB":"KX BG87.5X72.5 5.10 0103 9","1M999267005EB":"KX BG87.5X72.5 5.10 0103 9","1M999267006EB":"KX BG87.5X72.5 5.10 0103 9","1M999267007EB":"KX BG87.5X72.5 5.10 0103 9","1M999267009EB":"KX BG87.5X72.5 5.10 0103 9","1M999267010EB":"KX BG87.5X72.5 5.10 0103 9","1M999267011EB":"KX BG87.5X72.5 5.10 0103 9","1M999267012EB":"KX BG87.5X72.5 5.10 0103 9","1M999267013EB":"KX BG87.5X72.5 5.10 0103 9","1M999267014EB":"KX BG87.5X72.5 5.10 0103 9","1M999267015EB":"KX BG87.5X72.5 5.10 0103 9","1M999267016EB":"KX BG87.5X72.5 5.10 0103 9","1M999267017EB":"KX BG87.5X72.5 5.10 0103 9","1M999282000E":"KX BG95X97.3 5.14 0102 9","1M999285000E":"KX BGA100X100 5.71 0102 2","1M999285001E":"KX BGA100X100 5.71 0102 2","17B12011001LE":"KX BGA110110 6.27 0102 12","17B12019002LE":"KX BGA120X130 6.56 0102 12","17B12018001LE":"KX BGA120X130 7.38 0102 12","17B12018002LE":"KX BGA120X130 7.38 0102 12","17B12015001LE":"KX BGA120X140 9.81 0102 12","1M999229000EB":"KX BGA35X35 5.61 0308 2","1M999229001EB":"KX BGA35X35 5.61 0308 2","1M999229003E":"KX BGA35X35 5.61 0308 2","1M999268001EB":"KX BGA37.5X37.5 3.74 0307 2","1M999268002E":"KX BGA37.5X37.5 3.74 0307 2","1M999268002EB":"KX BGA37.5X37.5 3.74 0307 2","1M999268003EB":"KX BGA37.5X37.5 3.74 0307 2","1M999268004EB":"KX BGA37.5X37.5 3.74 0307 2","1M999274000E":"KX BGA47.5X47.5 2.56 0206 2","1M999303000E":"KX BGA47.5X47.5 2.56 0206 2","1M999238000EB":"KX BGA50X50 5.31 0205 2","1M999316000E":"KX BGA55X55 4.80 0205 2","1M999316001E":"KX BGA55X55 4.80 0205 2","1M999275000E":"KX BGA57.5X57.5 5.28 0205 2","1M999275001EB":"KX BGA57.5X57.5 5.28 0205 2","1M999275002E":"KX BGA57.5X57.5 5.28 0205 2","1M999275003E":"KX BGA57.5X57.5 5.28 0205 2","1M999275004E":"KX BGA57.5X57.5 5.28 0205 2","1M999275005E":"KX BGA57.5X57.5 5.28 0205 2","1M999292000EB":"KX BGA57.5X57.5 5.28 0205 2","1M999297000E":"KX BGA57.5X57.5 5.28 0205 2","17B13251001G2LEB":"KX LGA9191 4.6 0103 13BL4","17B13251002G2LE":"KX LGA9191 4.6 0103 13BL4","1M999251000E":"KX MODULE100X100 5.90 0102 2","1M999256000E":"KX MODULE77.5X85.0 5.51 0103 2","1M999256001EB":"KX MODULE77.5X85.0 5.51 0103 2","1M999256002EB":"KX MODULE77.5X85.0 5.51 0103 2","1M999256003EB":"KX MODULE77.5X85.0 5.51 0103 2","1M999256004E":"KX MODULE77.5X85.0 5.51 0103 2","1M999256005E":"KX MODULE77.5X85.0 5.51 0103 2","1M999256006E":"KX MODULE77.5X85.0 5.51 0103 2","17B02001001LE":"KX MODULE77.8X77.5 5.36 0103 2","1M999201001E":"KX MODULE77.8X77.5 5.36 0103 2","17B05010001LE":"N/V MODULE 14.00X19.73 0.73T (Assembly)","17B05013001LE":"N/V MODULE-1 14.00X19.73 0.73T (Assembly","17BP6590007G1E":"ND 0707 1.4 1025 6REV.B","17BP6134000G2LEB":"ND 0707 1.4 1025 6REV.H","17BP6134004G2LE":"ND 0707 1.4 1025 6REV.H","1M999181000EB":"ND 0707 1.4 1025 6REV.H","1M999181002EB":"ND 0707 1.4 1025 6REV.H","1M999181003EB":"ND 0707 1.4 1025 6REV.H","1M999181004E":"ND 0707 1.4 1025 6REV.H","1M999181001EB":"ND 0707 1.4 1025 6REV.H","17BP6856012G2LE":"ND 1010 1.4 0820 6REV.C","17BP6856013G2LE":"ND 1010 1.4 0820 6REV.C","17B06627008G2LEB":"ND 1010 1.4 0820 6REV.CbL2","17B06627018G2LEB":"ND 1010 1.4 0820 6REV.CbL2","17B06627019G2LE":"ND 1010 1.4 0820 6REV.CbL2","1M999968000EB":"NH BG1414 1.28 0717","1M999968001EB":"NH BG1414 1.28 0717","1M999968002E":"NH BG1414 1.28 0717","1M999968003E":"NH BG1414 1.28 0717","17BP60066001G2LEB":"NH BG1717 1.0 0615","17BP60066002G2LEB":"NH BG1717 1.0 0615","1M999584000E":"NH BG1717 1.0 0615","1M999584001E":"NH BG1717 1.0 0615","1M999584002E":"NH BG1717 1.0 0615","1M999584003E":"NH BG1717 1.0 0615","1M999895000EB":"NH BG1717 2.80 0615 6 REV.A","1M999895001EB":"NH BG1717 2.80 0615 6 REV.A","1M999895002EB":"NH BG1717 2.80 0615 6 REV.A","1M999895003EB":"NH BG1717 2.80 0615 6 REV.A","1M999895001E":"NH BG1717 2.80 0615 6REV.A","1M999895004E":"NH BG1717 2.80 0615 6REV.A","1M999474000E":"NH BG2121 2.3 0512 6REV.A","1M999245000EB":"NH BG2929 2.0 0409 REV.A","1M999245001EB":"NH BG2929 2.0 0409 REV.A","1M999245002EB":"NH BG2929 2.0 0409 REV.A","1M999375000EB":"NX BG1010 1.25 0820 9","1M999375001E":"NX BG1010 1.25 0820 9","1M999375002E":"NX BG1010 1.25 0820 9","17B06002001LE":"NX BG1414 1.4 0717","17BP6129009G2LEB":"NX BG1414 1.4 0717","1M999380000E":"NX BG1414 1.4 0717","1M999380001E":"NX BG1414 1.4 0717","1M999443000EB":"NX BG17.2X13.2 1.45 0618 8","1M999443001EB":"NX BG17.2X13.2 1.45 0618 8","1M999443003E":"NX BG17.2X13.2 1.45 0618 8","17BP6004004G2LE":"NX BG1919 1.0 0614 6","17BP6004017G2LE":"NX BG1919 1.0 0614 6","1M999243000EB":"NX BG1919 1.0 0614 6","1M999243001EB":"NX BG1919 1.0 0614 6","1M999243002E":"NX BG1919 1.0 0614 6","1M999243003E":"NX BG1919 1.0 0614 6","1M999243004E":"NX BG1919 1.0 0614 6","1M999243005E":"NX BG1919 1.0 0614 6","1M999243006E":"NX BG1919 1.0 0614 6","1M999243007E":"NX BG1919 1.0 0614 6","17BP6176007G2LE":"NX BG1919 1.0 0614 REV.A","17BP6176014G2LE":"NX BG1919 1.0 0614 REV.A","1M999240000EB":"NX BG1919 1.0 0614 REV.A","1M999240001EB":"NX BG1919 1.0 0614 REV.A","17B06891012G2LE":"NX BG2323 0.61 0512 6","1M999242000E":"NX BG2323 0.61 0512 6","1M999622000E":"NX BG2323 1.34 0512 6","1M999622001E":"NX BG2323 1.34 0512 6","1M999622002E":"NX BG2323 1.34 0512 6","17BP60050005G2LE":"NX BG2323 2.0 0512 REV.A","1M999852007E":"NX BG2323 2.0 0512 REV.A","17BP60171001G2LE":"NX BG2727 1.43 0410 6","17BP60171002G2LE":"NX BG2727 1.43 0410 6","17B06947007G2LE":"NX BG3131 1.57 0309 6","1M999460000E":"NX BG3131 1.57 0309 6","17B06001001LE":"NX BG3535 2.0 0308","17BP6123010G2LE":"NX BG3535 2.0 0308","17BP6123012G2LEB":"NX BG3535 2.0 0308","1M999244000EB":"NX BG3535 2.0 0308","1M999244001EB":"NX BG3535 2.0 0308","1M999244002EB":"NX BG3535 2.0 0308","1M999244003EB":"NX BG3535 2.0 0308","1M999244004EB":"NX BG3535 2.0 0308","17BP6098006G2LE":"NX BG3535 2.8 0308 6","17BP6098007G2LEB":"NX BG3535 2.8 0308 6","17BP6098011G2LE":"NX BG3535 2.8 0308 6","1M999246000EB":"NX BG3535 2.8 0308 6","1M999246001EB":"NX BG3535 2.8 0308 6","1M999261000E":"NX BG5060 1.2 0204 9","1M999308000EB":"NX BG8.9X22.8 1.1 1012 9","1M999308001E":"NX BG8.9X22.8 1.1 1012 9","1M999308001EB":"NX BG8.9X22.8 1.1 1012 9","1M999308002E":"NX BG8.9X22.8 1.1 1012 9","1M999308002EB":"NX BG8.9X22.8 1.1 1012 9","1M999308003EB":"NX BG8.9X22.8 1.1 1012 9","17B39003001LE":"NX BGA11X9.5 1.5 0821 39X","1M999324000E":"NX BGA52.5X52.5 1.99 0205 2","1M999135000E":"NX LGA5.75X5.75 1.3 1230 39X","17B39002001LE":"NX OLGA3.2X5 1.22 1435 39X","1M999191000EB":"NX PIM7.65X6.8 3.77 1026 9","1M999191001EB":"NX PIM7.65X6.8 3.77 1026 9","1M999287000EB":"NX QFN6X6.5 1.3 1326 8","1M999378000EB":"NX QFN6X6.5 1.3 1326 9","1M999378001E":"NX QFN6X6.5 1.3 1326 9","17B22004001LE":"TBG0714 0.84 1017 22","17B22004002LE":"TBG0714 0.84 1017 22","17B08014001LE":"TBG0714 0.84 1017 8","17B08014002LE":"TBG0714 0.84 1017 8","17B12023001LE":"TBG15.62X14.36 1.14 0614 12 RA bL4","17B12026001LE":"TBG16.09X14.34 1.08 0616 12 bL4","17B12022001LE":"TBG16.61X14.79 1.08 0614 12 bL4","17B12022002LE":"TBG16.61X14.79 1.08 0614 12 bL4","17B12022003LE":"TBG16.61X14.79 1.08 0614 12 bL4","17B12022004LE":"TBG16.61X14.79 1.08 0614 12 bL4","17B12022005LE":"TBG16.61X14.79 1.08 0614 12 bL4","17B12022006LE":"TBG16.61X14.79 1.08 0614 12 bL4","17B12022007LE":"TBG16.61X14.79 1.08 0614 12 bL4","17B12022008LE":"TBG16.61X14.79 1.08 0614 12 bL4","17B12024001LE":"TBG18.83X17.53 0.94 0514 12 bL4","17B12027001LE":"TBG3.69X3.79 0.54 1435 12","17B39004001LE":"TBG6.1x6.1 1.0 1435 39X","17B12042001LE":"TBG8.13X9.90 1.13 1021 12 bL4","17B12043001LE":"TBG8.13X9.90 1.13 1021 12 RA bL4","1M999337000EB":"TX BG0909 1.1 1026 9bL2","1M999337001EB":"TX BG0909 1.1 1026 9bL2","17BP9003002G2LE":"TX BG0911 0.7 1021 9","17B22002001LE":"TX BG10X14.5 1.14 0816 22","17B22002002LE":"TX BG10X14.5 1.14 0816 22","17B22002003LE":"TX BG10X14.5 1.14 0816 22","1M999155000E":"TX BG10X14.5 1.14 0816 22","1M999155001E":"TX BG10X14.5 1.14 0816 22","17B08012001LE":"TX BG10X14.5 1.14 0816 8","1M999338001EB":"TX BG1111 1.1 0820 9bL2","1M999338002E":"TX BG1111 1.1 0820 9bL2","1M999376000EB":"TX BG1111 1.46 0820 9","1M999376001E":"TX BG1111 1.46 0820 9","1M999376001EB":"TX BG1111 1.46 0820 9","1M999212000EB":"TX BG12.08X15.94 0.907 0714 9bL4","1M999166000EB":"TX BG12.08X15.94 0.907 0814 9REV.AbL4","1M999166001EB":"TX BG12.08X15.94 0.907 0814 9REV.AbL4","1M999166002EB":"TX BG12.08X15.94 0.907 0814 9REV.AbL4","17B22001001LE":"TX BG12.4X12.4 1.2 0817 22","17B22001002LE":"TX BG12.4X12.4 1.2 0817 22","1M999207000E":"TX BG12.4X12.4 1.2 0817 22","1M999207001EB":"TX BG12.4X12.4 1.2 0817 22","1M999207002E":"TX BG12.4X12.4 1.2 0817 22","1M999207003E":"TX BG12.4X12.4 1.2 0817 22","1M999179000E":"TX BG12.4X12.4 1.2 0817 8","17B08010001LE":"TX BG12.4X12.4 1.2 0817 8","1M999359000E":"TX BG12.63X16.52 0.59 0714 22","1M999362000EB":"TX BG12.63X16.52 0.59 0714 22","1M999466000E":"TX BG12.68X15.88 0.9 0714 9bL4","1M999272000E":"TX BG12.73X16.47 0.79 0714 9bL4","17BP9001001LE":"TX BG12.78X14.93 1.02 0714 9bL4","17BP9001002LE":"TX BG12.78X14.93 1.02 0714 9bL4","1M999328000E":"TX BG12.7X9.2 0.78 0721 9bL4","1M999328001E":"TX BG12.7X9.2 0.78 0721 9bL4","1M999357000E":"TX BG12.81X16.7 0.92 0714 9bL4","1M999456000E":"TX BG12.81X17.44 0.98 0714 9bL4","1M999451000E":"TX BG12.93X17.16 0.89 0714 9bL4","1M999142000E":"TX BG14.00X21.75 1.14 0612 9bL4","1M999363000EB":"TX BG14.1X13 1.0 0616 22","1M999363001EB":"TX BG14.1X13 1.0 0616 22","1M999363002EB":"TX BG14.1X13 1.0 0616 22","1M999363003EB":"TX BG14.1X13 1.0 0616 22","1M999283000E":"TX BG14.1X17.81 0.89 0614 9bL4","1M999263000E":"TX BG14.6X14.6 0.32 0614 9bL4","1M999331000E":"TX BG14.6X14.6 0.91 0614 9bL4","1M999214000EB":"TX BG14.7X14.5 0.53 0614 9bL4","1M999184000EB":"TX BG14.7X14.5 1.16 0614 9 REV.A bL4","1M999184001EB":"TX BG14.7X14.5 1.16 0614 9 REV.A bL4","1M999184002E":"TX BG14.7X14.5 1.16 0614 9 REV.A bL4","1M999213000EB":"TX BG14.7X14.5 1.16 0614 9bL4","1M999213001E":"TX BG14.7X14.5 1.16 0614 9bL4","1M999213001EB":"TX BG14.7X14.5 1.16 0614 9bL4","1M999213002EB":"TX BG14.7X14.5 1.16 0614 9bL4","1M999248000E":"TX BG1414 0.81 0717 9bL2","1M999248001E":"TX BG1414 0.81 0717 9bL2","17BP9200001LE":"TX BG1414 1.4 0717 9bL2","1M999339000EB":"TX BG1414 1.4 0717 9bL2","1M999339001EB":"TX BG1414 1.4 0717 9bL2","1M999498000E":"TX BG14x12.4 0.67 0616 27","1M999498001E":"TX BG14x12.4 0.67 0616 27","1M999498002E":"TX BG14x12.4 0.67 0616 27","1M999498003E":"TX BG14x12.4 0.67 0616 27","1M999498004E":"TX BG14x12.4 0.67 0616 27","1M999507000E":"TX BG14x12.4 0.67 0616 8","1M999153000E":"TX BG15.62X14.36 1.14 0614 9bL4","1M999153001E":"TX BG15.62X14.36 1.14 0614 9bL4","17BP6169001G2LEB":"TX BG1515 1.2 0717 REV.A","17BP6169002G2LE":"TX BG1515 1.2 0717 REV.A","17BP6169003G2LE":"TX BG1515 1.2 0717 REV.A","17BP6169006G2LE":"TX BG1515 1.2 0717 REV.A","17BP9201001LE":"TX BG16.65X14.83 1.08 0614 9bL4","17BP9201002LE":"TX BG16.65X14.83 1.08 0614 9bL4","17BP9201003LE":"TX BG16.65X14.83 1.08 0614 9bL4","1M999154000EB":"TX BG16.65X14.83 1.08 0614 9bL4","1M999154001EB":"TX BG16.65X14.83 1.08 0614 9bL4","1M999154002EB":"TX BG16.65X14.83 1.08 0614 9bL4","1M999154003EB":"TX BG16.65X14.83 1.08 0614 9bL4","1M999187000EB":"TX BG17.08X16.19 0.91 0614 9bL4","1M999247000E":"TX BG1818 0.82 0512 9bL2","1M999247001E":"TX BG1818 0.82 0512 9bL2","1M999192000E":"TX BG1818 1.24 0614 32","1M999192001E":"TX BG1818 1.24 0614 32","1M999192002E":"TX BG1818 1.24 0614 32","1M999192003E":"TX BG1818 1.24 0614 32","1M999527000EB":"TX BG22.25X15.05 0.76 0517 13bL4","1M999428000EB":"TX BG27.5X12 2.3 0419 9","1M999279000E":"TX BG3.6X4.1 1.0 1435 9bL2","17B13001001LE":"TX BG3131 2.05 0309 13bL2","1M999252000E":"TX BG3131 2.05 0309 13bL2","1M999252001E":"TX BG3131 2.05 0309 13bL2","1M999252002E":"TX BG3131 2.05 0309 13bL2","1M999252003E":"TX BG3131 2.05 0309 13bL2","1M999255000E":"TX BG3131 2.05 0309 1-SR1","1M999313000E":"TX BG3131 2.05 0309 9bL2","1M999313001EB":"TX BG3131 2.05 0309 9bL2","1M999313002E":"TX BG3131 2.05 0309 9bL2","1M999148000E":"TX BG35X25 0.65 0407 39X","1M999172000E":"TX BG4.4X4.4 1.0 1435 1-SR2","1M999429000EB":"TX BG4.4X4.4 1.0 1435 9bL2","1M999429001E":"TX BG4.4X4.4 1.0 1435 9bL2","1M999429002E":"TX BG4.4X4.4 1.0 1435 9bL2","1M999200000E":"TX BG6.2X11.4 0.94 1020 8","1M999180000E":"TX BG6.2X12.6 1.20 1020 22","1M999180001E":"TX BG6.2X12.6 1.20 1020 22","1M999180002E":"TX BG6.2X12.6 1.20 1020 22","1M999180003E":"TX BG6.2X12.6 1.20 1020 22","1M999180004E":"TX BG6.2X12.6 1.20 1020 22","1M999169000E":"TX BG6.2X12.6 1.20 1020 8","1M999169001E":"TX BG6.2X12.6 1.20 1020 8","1M999217000E":"TX BG6.4X6.4 1.0 1026 13bL2","1M999217001E":"TX BG6.4X6.4 1.0 1026 13bL2","17B22003001LE":"TX BG7.2X12.4 1.0 1017 22","17B22003002LE":"TX BG7.2X12.4 1.0 1017 22","1M999310000EB":"TX BG7.2X12.4 1.0 1017 22","1M999310001EB":"TX BG7.2X12.4 1.0 1017 22","1M999310002EB":"TX BG7.2X12.4 1.0 1017 22","1M999310003EB":"TX BG7.2X12.4 1.0 1017 22","1M999310004EB":"TX BG7.2X12.4 1.0 1017 22","1M999310005EB":"TX BG7.2X12.4 1.0 1017 22","1M999305000E":"TX BG7.2X12.4 1.0 1017 8","17B22005001LE":"TX BG7.5X11 1.16 1021 22","1M999194000EB":"TX BG7.5X11 1.16 1021 22","1M999194001E":"TX BG7.5X11 1.16 1021 22","1M999194001EB":"TX BG7.5X11 1.16 1021 22","1M999194002EB":"TX BG7.5X11 1.16 1021 22","1M999194003EB":"TX BG7.5X11 1.16 1021 22","1M999194004EB":"TX BG7.5X11 1.16 1021 22","17B08617002LE":"TX BG7.5X11 1.16 1021 8","1M999265000EB":"TX BG7.5X11.5 1.0 1019 22","1M999265001E":"TX BG7.5X11.5 1.0 1019 22","1M999265001EB":"TX BG7.5X11.5 1.0 1019 22","1M999265002EB":"TX BG7.5X11.5 1.0 1019 22","1M999265003EB":"TX BG7.5X11.5 1.0 1019 22","1M999265004EB":"TX BG7.5X11.5 1.0 1019 22","1M999264000E":"TX BG7.5X11.5 1.0 1019 8","1M999176000E":"TX BG7.5X13.5 1.20 1018 22","1M999176001E":"TX BG7.5X13.5 1.20 1018 22","1M999176002E":"TX BG7.5X13.5 1.20 1018 22","17BP6222004G2LEB":"TX BG7.8X7.8 0.55 1026","17BP6222005G2LE":"TX BG7.8X7.8 0.55 1026","1M999163000EB":"TX BG8.93X14.26 0.81 1016 9bL4","1M999276000E":"TX BG8X12.4 1.2 1017 22","1M999276001E":"TX BG8X12.4 1.2 1017 22","1M999276002E":"TX BG8X12.4 1.2 1017 22","1M999276003E":"TX BG8X12.4 1.2 1017 22","1M999346000E":"TX BG9.16X15.93 0.75 0814 9bL4","17B08539003LE":"TX BG9.57X8.57 0.56 1021 8 REV.A","17B08539001LE":"TX BG9.57X8.57 0.56 1021 8 REV.AbL4","17B02002001LE":"TX BG9X11 0.8 1021 2","1M999202000EB":"TX BG9X11 0.8 1021 2","1M999202001EB":"TX BG9X11 0.8 1021 2","1M999202002EB":"TX BG9X11 0.8 1021 2","1M999502000EB":"TX BGA0606 1.0 1435 9 REV.M bL2","1M999502001EB":"TX BGA0606 1.0 1435 9 REV.M bL2","1M999502002E":"TX BGA0606 1.0 1435 9 REV.M bL2","1M999502003EB":"TX BGA0606 1.0 1435 9 REV.M bL2","1M999502004EB":"TX BGA0606 1.0 1435 9 REV.M bL2","1M999502005E":"TX BGA0606 1.0 1435 9REV.MbL2","17B08009001LE":"TX CSP1.535X1.865 0.62 1435 8bL2","17B08011002LE":"TX CSP1.535X2.2 0.62 1435 8 bL2","17B08011003LE":"TX CSP1.535X2.2 0.62 1435 8 bL2","17B12030001LE":"TX CSP2.49X2.58 0.37 1435 12 bR2","17B05079001LE":"TX LGA14X14 2.7 0717 39X","1M999491000EB":"TX LGA5.9x7.9 0.58 1426 9bL2","1M999492000EB":"TX LGA6X6.4 0.58 1426 9bL2","17B05082001LE":"TX LGA6X6.4 0.58 1426 9bL2 (BLUE P-BIN)","1M999157000EB":"TX OLGA2.13X2.08 0.6 1235 32X","1M999174000E":"TX OLGA2.13X2.08 0.628 1235 39X","1M999449000EB":"TX PIM2.95X4.07 0.8 1435 9bL2","1M999449001E":"TX PIM2.95X4.07 0.8 1435 9bL2","1M999449001EB":"TX PIM2.95X4.07 0.8 1435 9bL2","1M999449002E":"TX PIM2.95X4.07 0.8 1435 9bL2","1M999382000EB":"TX PIM6.5X10 1.42 1020 9bL2","17BP9008002LEB":"TX PIM7.3X11 1.35 1020 9bL2","17BP9008004LE":"TX PIM7.3X11 1.35 1020 9bL2","1M999237000E":"TX PIM8X12.5 1.37 1017 9bL2","1M999273001E":"TX QFN0202 0.8 1435 9bL2","17BP9010001LE":"TX QFN0405 0.6 1435 9bL2","1M999139000E":"TX QFN0807 0.8 1026 39X","1M999462000E":"TX QFN0909 1.0 1026 6REV.B","1M999462001E":"TX QFN0909 1.0 1026 6REV.B","1M999462002E":"TX QFN0909 1.0 1026 6REV.B","17BP6250001G2LEB":"TX QFN12X11 0.8 0821","17BP6250004G2LE":"TX QFN12X11 0.8 0821","17BP6250005G2LE":"TX QFN12X11 0.8 0821","17BP6250006G2LE":"TX QFN12X11 0.8 0821","1M999464001E":"TX QFN2.6X2.6 0.68 1640 9REV.AbL2","1M999464002E":"TX QFN2.6X2.6 0.68 1640 9REV.AbL2"};
+
+// ==================== STATE ====================
+const STORAGE_KEY = 'micron_barcode_gen_v6';
+let state = {
+  boxes: [],      // [{scan, partNo, start, end, qty}]
+  totalSlots: 100
+};
+
+function loadState() {
+  try {
+    const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    if (s) state = s;
+  } catch(e) {}
+}
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+// ==================== INIT ====================
+function init() {
+  loadState();
+  // set today's date
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth()+1).padStart(2,'0');
+  const dd = String(today.getDate()).padStart(2,'0');
+  document.getElementById('shipDate').value = `${yyyy}-${mm}-${dd}`;
+
+  // restore shipment info
+  if (state.shipDate) document.getElementById('shipDate').value = state.shipDate;
+  if (state.shipTo) document.getElementById('shipTo').value = state.shipTo;
+  if (state.remark) document.getElementById('remark').value = state.remark;
+  if (state.peakPN) {
+    document.getElementById('peakPN').value = state.peakPN;
+    lookupPN(true);
+  }
+
+  applyLang();
+
+  // save shipment info on change
+  ['shipDate','shipTo','remark'].forEach(id => {
+    document.getElementById(id).addEventListener('change', () => {
+      state[id] = document.getElementById(id).value;
+      saveState();
+    });
+  });
+
+  // PN input: auto-lookup on every keystroke
+  document.getElementById('peakPN').addEventListener('input', () => {
+    lookupPN(false);
+  });
+  // also keep Enter support
+  document.getElementById('peakPN').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); lookupPN(); }
+  });
+}
+
+// ==================== PN LOOKUP ====================
+function lookupPN(silent) {
+  const pn = document.getElementById('peakPN').value.trim().toUpperCase();
+  const desc = PN_MAP[pn] || PN_MAP[document.getElementById('peakPN').value.trim()];
+  const msgEl = document.getElementById('pnMsg');
+  const descEl = document.getElementById('trayDesc');
+
+  if (!pn) { descEl.textContent = t('trayPlhEmpty'); return; }
+
+  if (desc) {
+    descEl.textContent = desc;
+    descEl.style.background = '#e8f5e9';
+    descEl.style.borderColor = '#2e7d32';
+    descEl.style.color = '#1b5e20';
+    if (!silent) { msgEl.style.color='#2e7d32'; msgEl.textContent=t('msgFound'); }
+    state.peakPN = document.getElementById('peakPN').value.trim();
+    state.trayDesc = desc;
+    saveState();
+  } else {
+    // try case-insensitive search
+    const keys = Object.keys(PN_MAP);
+    const found = keys.find(k => k.toUpperCase() === pn);
+    if (found) {
+      descEl.textContent = PN_MAP[found];
+      descEl.style.background = '#e8f5e9';
+      descEl.style.borderColor = '#2e7d32';
+      descEl.style.color = '#1b5e20';
+      if (!silent) { msgEl.style.color='#2e7d32'; msgEl.textContent=t('msgFound'); }
+      state.peakPN = document.getElementById('peakPN').value.trim();
+      state.trayDesc = PN_MAP[found];
+      saveState();
+    } else {
+      descEl.textContent = t('msgPNNotInList');
+      descEl.style.background = '#fff8e1';
+      descEl.style.borderColor = '#f57c00';
+      descEl.style.color = '#e65100';
+      if (!silent) { msgEl.style.color='#e65100'; msgEl.textContent=t('msgNotFound'); }
+    }
+  }
+}
+
+// ==================== BOX RENDERING ====================
+function renderBoxes() {
+  const grid = document.getElementById('boxesGrid');
+  grid.innerHTML = '';
+  const total = Math.max(state.totalSlots || 100, state.boxes.length + 5);
+  state.totalSlots = total;
+
+  for (let i = 0; i < total; i++) {
+    const box = state.boxes[i];
+    const filled = box && box.scan;
+    const div = document.createElement('div');
+    div.className = 'box-row' + (filled ? ' filled' : '');
+    div.innerHTML = `
+      <div class="box-label">${t('boxLabel')} ${i+1}</div>
+      <input type="text" class="box-scan" data-idx="${i}"
+             value="${filled ? esc(box.scan) : ''}"
+             placeholder="${t('boxPlh')}"
+             autocomplete="off"/>
+      ${filled ? `<div class="box-info">
+        <div class="box-info-item">Start<span class="box-start">${box.start}</span></div>
+        <div class="box-info-item">End<span class="box-end">${box.end}</span></div>
+      </div>
+      <div class="box-qty">${t('boxQtyLabel')} ${box.qty.toLocaleString()} pcs</div>
+      <button class="box-del" onclick="clearBox(${i})" title="X">✕</button>` : ''}
+    `;
+    grid.appendChild(div);
+  }
+
+  // attach events
+  grid.querySelectorAll('.box-scan').forEach(input => {
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); processBoxScan(parseInt(e.target.dataset.idx), e.target.value); }
+    });
+    input.addEventListener('change', e => {
+      processBoxScan(parseInt(e.target.dataset.idx), e.target.value);
+    });
+  });
+
+  document.getElementById('totalBoxCount').textContent = total;
+}
+
+function esc(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function processBoxScan(idx, rawValue) {
+  const v = rawValue.trim();
+  if (!v) { clearBox(idx); return; }
+
+  // Parse: PartNo/StartNo/EndNo  or just StartNo/EndNo
+  const parts = v.split('/').map(x => x.trim());
+  let partNo = '', start = 0, end = 0;
+
+  if (parts.length >= 3) {
+    partNo = parts[0];
+    start = Number(parts[1]);
+    end = Number(parts[2]);
+  } else if (parts.length === 2) {
+    start = Number(parts[0]);
+    end = Number(parts[1]);
+  } else if (parts.length === 1 && !isNaN(Number(parts[0]))) {
+    start = Number(parts[0]);
+    end = Number(parts[0]);
+  } else {
+    alert(`Box ${idx+1}: ${t('alertFmt')}`);
+    return;
+  }
+
+  if (!Number.isFinite(start) || !Number.isFinite(end)) {
+    alert(`Box ${idx+1}: ${t('alertNum')}`);
+    return;
+  }
+  if (end < start) {
+    alert(`Box ${idx+1}: ${t('alertEndLt')}`);
+    return;
+  }
+
+  const qty = end - start + 1;
+
+  // If partNo scanned and differs from current PN, update
+  if (partNo && !document.getElementById('peakPN').value.trim()) {
+    document.getElementById('peakPN').value = partNo;
+    lookupPN(true);
+  }
+
+  if (!state.boxes[idx]) state.boxes[idx] = {};
+  state.boxes[idx] = { scan: v, partNo, start, end, qty };
+  saveState();
+  renderBoxes();
+  updateSummary();
+
+  // focus next box
+  setTimeout(() => {
+    const inputs = document.querySelectorAll('.box-scan');
+    if (inputs[idx+1]) inputs[idx+1].focus();
+  }, 50);
+}
+
+function clearBox(idx) {
+  state.boxes[idx] = null;
+  saveState();
+  renderBoxes();
+  updateSummary();
+}
+
+function addMoreBoxes(n) {
+  state.totalSlots = (state.totalSlots || 100) + n;
+  saveState();
+  renderBoxes();
+  updateSummary();
+}
+
+function updateSummary() {
+  const filled = state.boxes.filter(b => b && b.scan);
+  const totalQty = filled.reduce((s, b) => s + (b.qty||0), 0);
+  const avg = filled.length ? Math.round(totalQty / filled.length) : 0;
+  document.getElementById('totalBoxes').textContent = filled.length;
+  document.getElementById('totalQty').textContent = totalQty.toLocaleString();
+  document.getElementById('avgQty').textContent = avg.toLocaleString();
+}
+
+function clearAll() {
+  if (!confirm(t('alertClear'))) return;
+
+  // 오늘 날짜 계산
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth()+1).padStart(2,'0');
+  const dd = String(today.getDate()).padStart(2,'0');
+  const todayStr = `${yyyy}-${mm}-${dd}`;
+
+  // state 초기화
+  state.boxes = [];
+  state.totalSlots = 100;
+  state.shipDate = todayStr;
+  state.shipTo = '';
+  state.remark = '';
+  state.peakPN = '';
+  state.trayDesc = '';
+  saveState();
+
+  // UI 초기화
+  document.getElementById('shipDate').value = todayStr;
+  document.getElementById('shipTo').value = '';
+  document.getElementById('remark').value = '';
+  document.getElementById('peakPN').value = '';
+
+  const descEl = document.getElementById('trayDesc');
+  descEl.textContent = t('trayPlhEmpty');
+  descEl.style.background = '#e8f5e9';
+  descEl.style.borderColor = '#2e7d32';
+  descEl.style.color = '#1b5e20';
+
+  document.getElementById('pnMsg').textContent = '';
+
+  renderBoxes();
+  updateSummary();
+}
+
+// ==================== EXCEL EXPORT ====================
+function downloadExcel() {
+  if (typeof XLSX === 'undefined') {
+    alert(t('alertXlsx'));
+    return;
+  }
+
+  const shipDate = document.getElementById('shipDate').value || '';
+  const shipTo   = document.getElementById('shipTo').value || '';
+  const remark   = document.getElementById('remark').value || '';
+  const peakPN   = document.getElementById('peakPN').value || '';
+  const trayDescEl = document.getElementById('trayDesc');
+  const trayDesc = (trayDescEl && trayDescEl.textContent.startsWith('—')) ? '' : (trayDescEl ? trayDescEl.textContent : '');
+
+  const filled   = state.boxes.filter(b => b && b.scan);
+  const totalQty = filled.reduce((s, b) => s + (b.qty || 0), 0);
+
+  // ── 공통 헤더 섹션 ────────────────────────────────────────────────
+  function makeHeader(cols) {
+    const empty = Array(cols).fill('');
+    return [
+      ['Micron Barcode List Generator', ...empty.slice(1)],
+      ['Shipment Date', shipDate, ...empty.slice(2)],
+      ['Ship To', shipTo, ...empty.slice(2)],
+      ['PEAK PN', peakPN, ...empty.slice(2)],
+      ['Tray Description', trayDesc, ...empty.slice(2)],
+      ['Remark', remark, ...empty.slice(2)],
+      empty,
+      ['Scanned Boxes', filled.length, 'Total Qty', totalQty, ...empty.slice(4)],
+      empty,
+    ];
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // 중복 검사: 박스 간 바코드 범위 겹침 여부 확인
+  // ════════════════════════════════════════════════════════════════
+  // 각 박스에 대해 다른 박스와 범위가 겹치는지 검사
+  const dupFlags = filled.map((b, i) => {
+    const s1 = Number(b.start), e1 = Number(b.end);
+    const overlaps = [];
+    filled.forEach((b2, j) => {
+      if (i === j) return;
+      const s2 = Number(b2.start), e2 = Number(b2.end);
+      // 두 범위가 겹치면: s1 <= e2 AND s2 <= e1
+      if (s1 <= e2 && s2 <= e1) {
+        overlaps.push(j + 1); // 겹치는 박스 번호 (1-based)
+      }
+    });
+    return overlaps;
+  });
+
+  const hasDup = dupFlags.some(d => d.length > 0);
+
+  // 중복이 있으면 저장 전 경고 (저장은 계속 진행)
+  if (hasDup) {
+    const dupList = dupFlags
+      .map((d, i) => d.length > 0 ? `Box ${i+1} ↔ Box ${d.join(', ')}` : null)
+      .filter(Boolean).join('\n');
+    alert(`⚠ Duplicate barcode numbers detected!\n\n${dupList}\n\nThe file will be saved, but please check the duplicates.`);
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // Sheet 1: Shipment List — 박스별 요약 (1행 = 1박스)
+  // ════════════════════════════════════════════════════════════════
+  const summaryRows = [
+    ...makeHeader(7),
+    ['No.', 'Scan Data', 'Part No.', 'Start No.', 'End No.', 'Qty (pcs)', 'Duplicate Check'],
+  ];
+  filled.forEach((b, i) => {
+    const dups = dupFlags[i];
+    const dupStatus = dups.length === 0
+      ? '✔ OK'
+      : `⚠ Duplicate - Overlaps with Box ${dups.join(', ')}`;
+    summaryRows.push([
+      i + 1,
+      b.scan,
+      b.partNo || peakPN,
+      Number(b.start),
+      Number(b.end),
+      b.qty,
+      dupStatus,
+    ]);
+  });
+  // 합계 행
+  summaryRows.push([null, null, null, null, 'Total', totalQty,
+    hasDup ? '⚠ Duplicates Found' : '✔ No Duplicates']);
+
+  const ws1 = XLSX.utils.aoa_to_sheet(summaryRows);
+  ws1['!cols'] = [
+    { wch: 6 },
+    { wch: 38 },
+    { wch: 18 },
+    { wch: 16 },
+    { wch: 16 },
+    { wch: 12 },
+    { wch: 28 },
+  ];
+
+  // ════════════════════════════════════════════════════════════════
+  // Sheet 2: detail — 바코드 번호별 상세 (1행 = 1개)
+  // ════════════════════════════════════════════════════════════════
+  const detailRows = [
+    ...makeHeader(4),
+    ['No.', 'Part No.', 'Barcode No.', ''],
+  ];
+  let seqNo = 1;
+  filled.forEach(b => {
+    const pn    = b.partNo || peakPN;
+    const start = Number(b.start);
+    const end   = Number(b.end);
+    for (let num = start; num <= end; num++) {
+      detailRows.push([seqNo++, num === start ? pn : null, num, null]);
+    }
+  });
+
+  const ws2 = XLSX.utils.aoa_to_sheet(detailRows);
+  ws2['!cols'] = [
+    { wch: 26.66 },
+    { wch: 31.83 },
+    { wch: 17.16 },
+    { wch: 17.0  },
+  ];
+
+  // ── 워크북 조립 ──────────────────────────────────────────────────
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws1, 'Shipment List');
+  XLSX.utils.book_append_sheet(wb, ws2, 'detail');
+
+  // ── 파일명: 날짜_파트넘버.xlsx ───────────────────────────────────
+  const dateStr = shipDate.replace(/-/g, '') || new Date().toISOString().slice(0,10).replace(/-/g,'');
+  const pnStr   = peakPN.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 30) || 'UNKNOWN_PN';
+  XLSX.writeFile(wb, `${dateStr}_${pnStr}.xlsx`);
+}
+
+// ==================== PN MANAGEMENT ====================
+function showPNMgmt() {
+  renderPNList();
+  document.getElementById('pnModal').classList.add('show');
+}
+function closeModal() {
+  document.getElementById('pnModal').classList.remove('show');
+}
+function renderPNList() {
+  const wrap = document.getElementById('pnListWrap');
+  const keys = Object.keys(PN_MAP).sort();
+  const filter = (document.getElementById('pnSearch') || {value:''}).value.toLowerCase();
+  const filtered = filter ? keys.filter(k => k.toLowerCase().includes(filter) || PN_MAP[k].toLowerCase().includes(filter)) : keys;
+  wrap.innerHTML = `<table><thead><tr><th>SAP PN</th><th>Description</th><th></th></tr></thead><tbody>
+    ${filtered.slice(0,200).map(k => `<tr><td>${esc(k)}</td><td>${esc(PN_MAP[k])}</td>
+      <td><button style="border:none;background:none;cursor:pointer;color:#c62828;font-size:13px" onclick="deletePNEntry('${esc(k)}')">✕</button></td>
+    </tr>`).join('')}
+    ${filtered.length > 200 ? `<tr><td colspan="3" style="text-align:center;color:#888;padding:8px">… 외 ${filtered.length-200}개 (검색으로 필터링)</td></tr>` : ''}
+  </tbody></table>`;
+}
+function addPNEntry() {
+  const pn = document.getElementById('newPN').value.trim();
+  const desc = document.getElementById('newDesc').value.trim();
+  const msgEl = document.getElementById('addPNMsg');
+  if (!pn || !desc) { msgEl.className='msg err'; msgEl.style.display='block'; msgEl.textContent=t('addPNErr'); return; }
+  PN_MAP[pn] = desc;
+  document.getElementById('newPN').value = '';
+  document.getElementById('newDesc').value = '';
+  msgEl.className='msg ok'; msgEl.style.display='block'; msgEl.textContent=`✔ "${pn}" ${t('addPNOk')}`;
+  renderPNList();
+  setTimeout(() => { msgEl.style.display='none'; }, 2000);
+}
+function deletePNEntry(pn) {
+  if (!confirm(`"${pn}" ${t('delConfirm')}`)) return;
+  delete PN_MAP[pn];
+  renderPNList();
+}
+function exportPNList() {
+  if (typeof XLSX === 'undefined') { alert(t('alertXlsx')); return; }
+  const wb = XLSX.utils.book_new();
+  const data = [['SAP PN','Description'], ...Object.entries(PN_MAP).sort((a,b) => a[0].localeCompare(b[0]))];
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  ws['!cols'] = [{wch:22},{wch:50}];
+  XLSX.utils.book_append_sheet(wb, ws, 'PN List');
+  XLSX.writeFile(wb, 'PEAK_PN_List.xlsx');
+}
+
+// close modal on backdrop click
+document.getElementById('pnModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('pnModal')) closeModal();
+});
+
+// ==================== START ====================
+init();
+</script>
+</body>
+</html>
